@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">智能云视频</string>
+    <string name="tip_of_bad_net">无法连接到服务器，请检查手机网络！</string>
+    <string name="login_expire">无效AppKey或AccessToken，请重新登录</string>
+</resources>
