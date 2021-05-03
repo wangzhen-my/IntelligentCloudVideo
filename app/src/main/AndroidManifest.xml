@@ -1,47 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ncist.wl171.intelligentcloudvideo">
-
-    <!--基础功能所需权限-->
+    <!-- 基础功能所需权限 -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <!--配网所需权限-->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- 配网所需权限 -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-    <!--对讲所需权限-->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" /> <!-- 对讲所需权限 -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!--视频通话权限所需-->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" /> <!-- 视频通话权限所需 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
-        android:name="ncist.wl171.intelligentcloudvideo.Base.BaseApplication"
+        android:name=".Base.BaseApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher1"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.IntelligentCloudVideo">
-        <activity android:name=".LoginActivity">
+        <activity android:name=".Activity.MainActivity"
+            android:screenOrientation="portrait"></activity>
+        <activity android:name=".Activity.LoginActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name="com.videogo.main.EzvizWebViewActivity"
-            android:screenOrientation="portrait"
-            android:configChanges="orientation|keyboardHidden">
-        </activity>
-
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait"></activity>
     </application>
 
 </manifest>

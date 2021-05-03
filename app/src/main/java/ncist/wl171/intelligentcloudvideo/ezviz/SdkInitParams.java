@@ -26,15 +26,4 @@ public class SdkInitParams {
         return sdkInitParams;
     }
 
-//    public static SdkInitParams createBy(ServerAreasEnum serverArea){
-//        SdkInitParams sdkInitParams = new SdkInitParams();
-//        if (serverArea != null){
-//            sdkInitParams.appKey = serverArea.defaultOpenAuthAppKey;
-//            sdkInitParams.serverAreaId = serverArea.id;
-//            sdkInitParams.openApiServer = serverArea.openApiServer;
-//            sdkInitParams.openAuthApiServer = serverArea.openAuthApiServer;
-//        }
-//        return sdkInitParams;
-//    }
-
 }
