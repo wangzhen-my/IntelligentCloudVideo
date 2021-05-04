@@ -103,6 +103,7 @@ public class LoginActivity extends RootActivity {
 
     //初始化
     private void initData() {
+        settFullscreen(this);
         //则初始化SDK配置
         mInitParams = SdkInitParams.createBy();
         mInitParams.accessToken = null;
