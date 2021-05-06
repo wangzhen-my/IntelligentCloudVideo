@@ -157,4 +157,11 @@ public class LoginActivity extends RootActivity {
         }
         return isValid;
     }
+
+    //界面销毁时注销广播接收器
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterLoginResultReceiver();
+    }
 }

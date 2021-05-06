@@ -68,6 +68,7 @@
     android:listSelector="@null" 设置点击选项时选项背景无变化不变色
     android:overScrollFooter="@null" 设置滑动到底部的背景或颜色-->
     <ncist.wl171.intelligentcloudvideo.pulltorefresh.PullToRefreshListView
+
         android:id="@+id/camera_listview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
