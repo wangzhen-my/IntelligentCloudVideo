@@ -2,31 +2,45 @@ package ncist.wl171.intelligentcloudvideo.Activity;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import com.ez.stream.EZStreamClientManager;
+import com.videogo.constant.IntentConsts;
 import com.videogo.errorlayer.ErrorInfo;
 import com.videogo.exception.BaseException;
 import com.videogo.exception.ErrorCode;
+import com.videogo.openapi.bean.EZCameraInfo;
 import com.videogo.openapi.bean.EZDeviceInfo;
 import com.videogo.util.ConnectionDetector;
+import com.videogo.util.DateTimeUtil;
 import com.videogo.util.LogUtil;
 import com.videogo.util.Utils;
 
 import java.util.List;
 
-import ncist.wl171.intelligentcloudvideo.ActivityUtils;
 import ncist.wl171.intelligentcloudvideo.EZCameraListAdapter;
+import ncist.wl171.intelligentcloudvideo.EZUtils;
 import ncist.wl171.intelligentcloudvideo.R;
-import ncist.wl171.intelligentcloudvideo.pulltorefresh.PullToRefreshListView;
 
+import static com.ez.stream.EZError.EZ_OK;
 import static ncist.wl171.intelligentcloudvideo.Base.BaseApplication.getOpenSDK;
 
 public class MainActivity extends RootActivity implements View.OnClickListener {
+
+    public final static int RESULT_CODE = 101;
+    public final static int REQUEST_CODE = 100;
+
+    private boolean bIsFromSetting = false;
 
     private EZCameraListAdapter mAdapter = null;
 
@@ -34,7 +48,7 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
 
     private LinearLayout mNoCameraTipLy = null;
 
-    private PullToRefreshListView mListView = null;
+    private ListView mListView = null;
 
     private Button mUserBtn;
     @Override
@@ -46,9 +60,125 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
     }
 
     private void initView() {
-        mAdapter = new EZCameraListAdapter(this);
         mNoCameraTipLy = (LinearLayout) findViewById(R.id.no_camera_tip_ly);
-        mListView = (PullToRefreshListView) findViewById(R.id.camera_listview);
+        mListView = (ListView) findViewById(R.id.camera_listview);
+        mAdapter = new EZCameraListAdapter(this);
+        mAdapter.setOnClickListener(new EZCameraListAdapter.OnClickListener() {
+            /**
+             * 根据设备型号判断是否是HUB设备
+             */
+            private boolean isHubDevice(String deviceType){
+                if (TextUtils.isEmpty(deviceType)){
+                    return false;
+                }
+                switch (deviceType){
+                    case "CASTT":
+                    case "CAS_HUB_NEW":
+                        return true;
+                    default:
+                        //比较字符串前缀是否是CAS_WG_TEST
+                        return deviceType.startsWith("CAS_WG_TEST");
+                }
+            }
+
+            //点击查看监控视频图标
+            @Override
+            public void onPlayClick(BaseAdapter adapter, View view, int position) {
+                //获取列表中设备信息对象
+                final EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+                //获取设备类型并判断否是HUB设备
+                if (isHubDevice(deviceInfo.getDeviceType())){
+                    toast("无法查看HUB设备！");
+                    return;
+                }
+                if (deviceInfo.getCameraNum() <= 0 || deviceInfo.getCameraInfoList() == null || deviceInfo.getCameraInfoList().size() <= 0) {
+                    LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
+                    toast("如果设备通道数量小于0 || 设备通道列表等于null || 设备通道列表长度小于等于0");
+                    return;
+                }
+                /*单通道设备*/
+                if (deviceInfo.getCameraNum() == 1 && deviceInfo.getCameraInfoList() != null && deviceInfo.getCameraInfoList().size() == 1) {
+                    LogUtil.d(TAG, "cameralist have one camera");
+                    //获取设备的对应通道
+                    final EZCameraInfo cameraInfo = EZUtils.getCameraInfoFromDevice(deviceInfo, 0);
+                    if (cameraInfo == null) {
+                        toast("获取的通道为null！");
+                        return;
+                    }
+                    int ret = EZStreamClientManager.create(getApplication().getApplicationContext()).clearTokens();
+                    if (EZ_OK == ret){
+                        Log.i(TAG, "clearTokens: ok");
+                    }else{
+                        Log.e(TAG, "clearTokens: fail");
+                    }
+                    Intent intent = new Intent(MainActivity.this, EZRealPlayActivity.class);
+                    //向下一个activity传入设备通道信息
+                    intent.putExtra(IntentConsts.EXTRA_CAMERA_INFO, cameraInfo);
+                    //向下一个activity传入设备信息对象
+                    intent.putExtra(IntentConsts.EXTRA_DEVICE_INFO, deviceInfo);
+                    startActivityForResult(intent, REQUEST_CODE);
+                    return;
+                }
+            }
+
+            //点击回放图标
+            @Override
+            public void onRemotePlayBackClick(BaseAdapter adapter, View view, int position) {
+//                mClickType = TAG_CLICK_REMOTE_PLAY_BACK;
+//                EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+//                if (isHubDevice(deviceInfo.getDeviceType())){
+//                    jumpToDeviceInfoInputPage();
+//                    return;
+//                }
+//                if (deviceInfo.getCameraNum() <= 0 || deviceInfo.getCameraInfoList() == null || deviceInfo.getCameraInfoList().size() <= 0) {
+//                    LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
+//                    return;
+//                }
+//                /*单通道设备*/
+//                if (deviceInfo.getCameraNum() == 1 && deviceInfo.getCameraInfoList() != null && deviceInfo.getCameraInfoList().size() == 1) {
+//                    LogUtil.d(TAG, "cameralist have one camera");
+//                    EZCameraInfo cameraInfo = EZUtils.getCameraInfoFromDevice(deviceInfo, 0);
+//                    if (cameraInfo == null) {
+//                        return;
+//                    }
+//                    Intent intent = new Intent(EZCameraListActivity.this, EZPlayBackListActivity.class);
+//                    intent.putExtra(RemoteListContant.QUERY_DATE_INTENT_KEY, DateTimeUtil.getNow());
+//                    intent.putExtra(IntentConsts.EXTRA_CAMERA_INFO, cameraInfo);
+//                    startActivity(intent);
+//                    return;
+//                }
+//                /*多通道设备*/
+//                SelectCameraDialog selectCameraDialog = new SelectCameraDialog();
+//                selectCameraDialog.setEZDeviceInfo(deviceInfo);
+//                selectCameraDialog.setCameraItemClick(EZCameraListActivity.this);
+//                selectCameraDialog.show(getFragmentManager(), "RemotePlayBackClick");
+            }
+
+            //点击设置图标
+            @Override
+            public void onSetDeviceClick(BaseAdapter adapter, View view, int position) {
+//                mClickType = TAG_CLICK_SET_DEVICE;
+//                EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+//                Intent intent = new Intent(EZCameraListActivity.this, EZDeviceSettingActivity.class);
+//                Bundle bundle = new Bundle();
+//                bundle.putParcelable(IntentConsts.EXTRA_DEVICE_INFO,deviceInfo);
+//                intent.putExtra("Bundle",bundle);
+//                startActivity(intent);
+//                bIsFromSetting = true;
+            }
+
+            //点击消息通知图标
+            @Override
+            public void onAlarmListClick(BaseAdapter adapter, View view, int position) {
+//                mClickType = TAG_CLICK_ALARM_LIST;
+//                final EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+//                LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
+//                Intent intent = new Intent(EZCameraListActivity.this, EZMessageActivity2.class);
+//                intent.putExtra(IntentConsts.EXTRA_DEVICE_ID, deviceInfo.getDeviceSerial());
+//                startActivity(intent);
+            }
+        });
+        mListView.setAdapter(mAdapter);
         //设置activity状态栏颜色
         setStatusBarColor(this,R.color.c4);
         mUserBtn = (Button) findViewById(R.id.btn_user);
@@ -113,8 +243,6 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
 
     private class GetCamersInfoListTask extends AsyncTask<Void,Void, List<EZDeviceInfo>> {
         private int mErrorCode = 0;
-        private boolean mHeaderOrFooter;
-
         public GetCamersInfoListTask(){}
 
         //执行任务中的耗时操作
@@ -163,11 +291,10 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
                     mNoCameraTipLy.setVisibility(View.VISIBLE);
                 }
                 addCameraList(result);
-                toast("获取设备列表成功！");
+                toast("刷新设备列表成功！");
                 //通知附加的观察者基础数据已更改，任何反映数据集的视图都应刷新自身。
                 mAdapter.notifyDataSetChanged();
             }
-
             if (mErrorCode != 0) {
                 onError(mErrorCode);
             }
@@ -177,7 +304,7 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
             switch (errorCode) {
                 case ErrorCode.ERROR_WEB_SESSION_ERROR:
                 case ErrorCode.ERROR_WEB_SESSION_EXPIRE:
-                    ActivityUtils.handleSessionException(MainActivity.this);
+                    Utils.showToast(MainActivity.this, R.string.get_camera_list_fail2, errorCode);
                     break;
                 default:
                     if (mAdapter.getCount() == 0) {
@@ -199,6 +326,56 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
         for (int i = 0; i < count; i++) {
             item = result.get(i);
             mAdapter.addItem(item);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //如果从设置界面切回则刷新列表，因为有可能有设备被删除
+        //或者设备列表配置器中的设备数量为空则刷新界面要显示“没有找到任何设备”
+        if (bIsFromSetting || (mAdapter != null && mAdapter.getCount() == 0)) {
+            refreshButtonClicked();
+            bIsFromSetting = false;
+        }
+    }
+
+    /**  接收子activity（上一个activity）结束之后返回的值
+     * requestCode:请求码，用于启动子Activity
+     * resultCode:子Activity设置的结果码，用于指示操作结果。可以是任何整数值，但通常是resultCode = =
+     * RESULT_OK或resultCode==RESULT_CANCELED
+     * Data:用于打包返回数据的Intent,可以包括用于表示所选内容的URI。子Activity也可以在返回数据Intent时，添加一些附加消息
+     * */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        //若返回的是结果码
+        if (resultCode == RESULT_CODE && requestCode == REQUEST_CODE){
+            //设备序列号
+            String deviceSerial = intent.getStringExtra(IntentConsts.EXTRA_DEVICE_ID);
+            //获取camera在对应设备上的通道号
+            int cameraNo = intent.getIntExtra(IntentConsts.EXTRA_CAMERA_NO,-1);
+            //通道清晰度
+            int videoLevel = intent.getIntExtra("video_level",-1);
+            if (TextUtils.isEmpty(deviceSerial)||videoLevel == -1 || cameraNo == -1){
+                return;
+            }
+            //如果设备列表不为空
+            if (mAdapter.getDeviceInfoList() != null){
+                for (EZDeviceInfo deviceInfo:mAdapter.getDeviceInfoList()){
+                    //从设备列表中找到对应设备号的设备 && 获取该设备的通道列表并对比是否为null
+                    if (deviceInfo.getDeviceSerial().equals(deviceSerial) && deviceInfo.getCameraInfoList() != null){
+                        for (EZCameraInfo cameraInfo:deviceInfo.getCameraInfoList()){
+                            //找到设备通道列表中对应的通道号
+                            if (cameraInfo.getCameraNo() == cameraNo){
+                                //设置通道清晰度
+                                cameraInfo.setVideoLevel(videoLevel);
+                                mAdapter.notifyDataSetChanged();
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

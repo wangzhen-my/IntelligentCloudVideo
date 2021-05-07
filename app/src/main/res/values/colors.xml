@@ -10,6 +10,7 @@
     <color name="opensdk_main_bg">#f0f0f1</color>
     <color name="c4">#8d8d8d</color>
     <color name="transparent">#00ffffff</color>
+    <color name="gray">#adadad</color>
     <!-- 橘色字体 -->
     <color name="orange_text">#df2d10</color>
     <color name="black_text">#333333</color>

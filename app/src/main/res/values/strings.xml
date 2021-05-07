@@ -11,4 +11,5 @@
     <string name="cancel">取消</string>
     <string name="not_find_any_devices">找不到任何设备！</string>
     <string name="get_camera_list_fail">获取设备列表失败</string>
+    <string name="get_camera_list_fail2">获取设备列表失败！请重新登录！</string>
 </resources>
