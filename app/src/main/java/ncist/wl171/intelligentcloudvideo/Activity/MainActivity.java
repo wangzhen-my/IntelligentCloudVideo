@@ -334,6 +334,7 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
         super.onResume();
         //如果从设置界面切回则刷新列表，因为有可能有设备被删除
         //或者设备列表配置器中的设备数量为空则刷新界面要显示“没有找到任何设备”
+        //因为在oncreat方法中初始化了mAdapter，所以第一次启动activity也会刷新列表
         if (bIsFromSetting || (mAdapter != null && mAdapter.getCount() == 0)) {
             refreshButtonClicked();
             bIsFromSetting = false;

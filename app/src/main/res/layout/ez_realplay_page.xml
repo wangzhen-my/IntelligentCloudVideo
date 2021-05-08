@@ -1,9 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/realplay_page_ly"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".Activity.EZRealPlayActivity">
+    android:background="@color/common_bg"
+    android:gravity="center"
+    android:orientation="vertical" >
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <com.videogo.widget.TitleBar
+        android:id="@+id/title_bar_portrait"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <RelativeLayout
+        android:id="@+id/realplay_play_rl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@color/black_bg" >
+
+        <RelativeLayout
+            android:id="@+id/vg_play_window"
+            android:layout_width="match_parent"
+            android:layout_height="200dp">
+
+            <SurfaceView
+                android:id="@+id/realplay_sv"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent" />
+
+            <!--设备加载提示；摄像头不在线提示；摄像头隐蔽中提示-->
+            <include layout="@layout/realplay_loading_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+        </RelativeLayout>
+
+        <include layout="@layout/ez_play_control"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_below="@id/vg_play_window"/>
+
+        <ImageView
+            android:id="@+id/realplay_ptz_direction_iv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/vg_play_window"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/left_twinkle"
+            android:scaleType="fitXY"
+            android:visibility="gone" />
+
+
+
+    </RelativeLayout>
+
+    <include
+        layout="@layout/ezopen_realplay_operate_bar"
+        android:visibility="visible" />
+</LinearLayout>
