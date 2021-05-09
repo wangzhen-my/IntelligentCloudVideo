@@ -1,17 +1,28 @@
 package ncist.wl171.intelligentcloudvideo.Activity;
 
+import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -19,13 +30,16 @@ import androidx.annotation.NonNull;
 
 import com.videogo.constant.IntentConsts;
 import com.videogo.errorlayer.ErrorInfo;
+import com.videogo.exception.BaseException;
 import com.videogo.exception.ErrorCode;
 import com.videogo.openapi.EZConstants;
 import com.videogo.openapi.EZPlayer;
 import com.videogo.openapi.bean.EZCameraInfo;
 import com.videogo.openapi.bean.EZDeviceInfo;
+import com.videogo.openapi.bean.EZVideoQualityInfo;
 import com.videogo.realplay.RealPlayStatus;
 import com.videogo.util.ConnectionDetector;
+import com.videogo.util.LocalInfo;
 import com.videogo.util.LogUtil;
 import com.videogo.widget.CheckTextButton;
 import com.videogo.widget.TitleBar;
@@ -37,6 +51,22 @@ import static com.videogo.openapi.EZConstants.MSG_VIDEO_SIZE_CHANGED;
 
 public class EZRealPlayActivity extends RootActivity implements View.OnClickListener,Handler.Callback,SurfaceHolder.Callback {
 
+    //对讲与云台按钮
+    private LinearLayout realplay_operate_ly = null;
+    //云台控制面板关闭图标
+    private ImageButton ptzCloseBtn = null;
+    //主屏幕上云台转动方向提示图标
+    private ImageView mRealPlayPtzDirectionIv = null;
+    //云台控制圆盘
+    private LinearLayout mPtzControlLy = null;
+    //是否正在控制云台
+    private boolean mIsOnPtz = false;
+    //是否正在对讲
+    private Boolean isTalking = false;
+    //清晰度加载时界面显示加载中的提示框
+    private Dialog mWaitDialog = null;
+    //直播清晰度小弹窗
+    private PopupWindow mQualityPopupWindow = null;
     private SurfaceView mRealPlaySv = null;
     //播放器
     private SurfaceHolder mRealPlaySh = null;
@@ -63,6 +93,8 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
     private TextView mRealPlayTipTv;
     //整个加载页面的layout
     private RelativeLayout mRealPlayLoadingRl;
+    //新建对讲播放器
+    private EZPlayer mEZPlayertalk = null;
     private EZPlayer mEZPlayer = null;
     private static final String TAG = EZRealPlayActivity.class.getSimpleName();
     //一开始状态为初始化
@@ -98,6 +130,15 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         mRealPlaySv = (SurfaceView) findViewById(R.id.realplay_sv);
         mRealPlaySh = mRealPlaySv.getHolder();
         mRealPlaySh.addCallback(this);
+        //初始化设置清晰度加载中的提示框样式
+        mWaitDialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+        mWaitDialog.setContentView(R.layout.wait_dialog);
+        //设置dialog弹出后会点击屏幕或物理返回键，dialog不消失
+        mWaitDialog.setCancelable(false);
+        mRealPlayPtzDirectionIv = (ImageView) findViewById(R.id.realplay_ptz_direction_iv);
+        mPtzControlLy = (LinearLayout) findViewById(R.id.ptz_control_ly);
+        ptzCloseBtn = (ImageButton) findViewById(R.id.ptz_close_btn);
+        realplay_operate_ly = (LinearLayout) findViewById(R.id.realplay_operate_ly);
     }
 
     private void initLoadingUI() {
@@ -115,14 +156,8 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         mPortraitTitleBar.addBackButton(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //关闭云台弹出窗口
-//                closePtzPopupWindow();
-                //关闭对话弹出窗口
-//                closeTalkPopupWindow(true, false);
-//                if (mStatus != RealPlayStatus.STATUS_STOP) {
-//                    stopRealPlay();
-//                    setRealPlayStopUI();
-//                }
+                //关闭云台控制窗口
+                closePtzPopupWindow();
                 finish();
             }
         });
@@ -144,7 +179,70 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             }
         }
     }
-
+    //直播清晰度弹窗的按键监听
+    private View.OnClickListener mOnPopWndClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            switch (v.getId()) {
+                case R.id.quality_super_hd_btn: //超清
+                    setQualityMode(EZConstants.EZVideoLevel.VIDEO_LEVEL_SUPERCLEAR);
+                    break;
+                case R.id.quality_hd_btn:  //高清
+                    setQualityMode(EZConstants.EZVideoLevel.VIDEO_LEVEL_HD);
+                    break;
+                case R.id.quality_balanced_btn:  //均衡
+                    setQualityMode(EZConstants.EZVideoLevel.VIDEO_LEVEL_BALANCED);
+                    break;
+                case R.id.quality_flunet_btn:  //流畅
+                    setQualityMode(EZConstants.EZVideoLevel.VIDEO_LEVEL_FLUNET);
+                    break;
+                case R.id.ptz_close_btn:  //云台控制面板中的关闭按钮
+                    closePtzPopupWindow();
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+    //设置直播清晰度模式
+    private void setQualityMode(final EZConstants.EZVideoLevel mode) {
+        // 检查网络是否可用 Check if the network is available
+        if (!ConnectionDetector.isNetworkAvailable(EZRealPlayActivity.this)) {
+            toast("没有连接网络!");
+            return;
+        }
+        if (mEZPlayer != null) {
+            mWaitDialog.show();
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        /**设置指定监控点视频清晰度 该接口为耗时操作，必须在线程中调用
+                        参数:
+                        deviceSerial - 设备序列号
+                        cameraNo - 设备通道号，默认为1
+                        videoLevel - 清晰度 0-流畅 1-均衡 2-高品质*/
+                        BaseApplication.getOpenSDK().setVideoLevel(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo(), mode.getVideoLevel());
+                        mCurrentQulityMode = mode;
+                        //发送设置直播清晰度成功的handler消息
+                        Message msg = Message.obtain();
+                        msg.what = EZConstants.EZRealPlayConstants.MSG_SET_VEDIOMODE_SUCCESS;
+                        mHandler.sendMessage(msg);
+                        LogUtil.i(TAG, "setQualityMode success");
+                    } catch (BaseException e) {
+                        //设置清晰度变量为流畅
+                        mCurrentQulityMode = EZConstants.EZVideoLevel.VIDEO_LEVEL_FLUNET;
+                        e.printStackTrace();
+                        //发送设置直播清晰度失败的handler消息
+                        Message msg = Message.obtain();
+                        msg.what = EZConstants.EZRealPlayConstants.MSG_SET_VEDIOMODE_FAIL;
+                        mHandler.sendMessage(msg);
+                        LogUtil.i(TAG, "setQualityMode fail");
+                    }
+                }
+            }).start();
+        }
+    }
     @Override
     public void finish() {
         //如果通道信息对象不为空，界面结束时向主页面返回数据
@@ -175,25 +273,294 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
                     startRealPlay();
                 }
                 break;
-//            case R.id.realplay_talk_btn:
-//                //对讲一会自己试一试
-//                selectTalkbackItems();
-//                break;
-//            case R.id.realplay_quality_btn:
-//                //清晰度按钮
-//                openQualityPopupWindow(mRealPlayQualityBtn);
-//                break;
-//            case R.id.realplay_ptz_btn:
-//                //云台控制
-//                openPtzPopupWindow(mRealPlayPlayRl);
-//                break;
-//            case R.id.realplay_sound_btn:
-//                //静音按钮
-//                onSoundBtnClick();
-//                break;
-//            default:
-//                break;
+            case R.id.realplay_talk_btn:
+                //对讲
+                selectTalkbackItems();
+                break;
+            case R.id.realplay_quality_btn:
+                //清晰度按钮被按下
+                openQualityPopupWindow(mRealPlayQualityBtn);
+                break;
+            case R.id.realplay_ptz_btn:
+                //云台按钮
+                openPtzPopupWindow();
+                break;
+            case R.id.realplay_sound_btn:
+                //声音按钮
+                onSoundBtnClick();
+                break;
+            default:
+                break;
         }
+    }
+    //云台控制面板按键监听器
+    private View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionevent) {
+            int action = motionevent.getAction();
+            final int speed = EZConstants.PTZ_SPEED_DEFAULT;
+            switch (action) {
+                //屏幕手指按下
+                case MotionEvent.ACTION_DOWN:
+                    switch (view.getId()) {
+                        case R.id.ptz_top_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_up_sel);
+                            setPtzDirectionIv(RealPlayStatus.PTZ_UP);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandUp, EZConstants.EZPTZAction.EZPTZActionSTART);
+                            break;
+                        case R.id.ptz_bottom_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_bottom_sel);
+                            setPtzDirectionIv(RealPlayStatus.PTZ_DOWN);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandDown, EZConstants.EZPTZAction.EZPTZActionSTART);
+                            break;
+                        case R.id.ptz_left_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_left_sel);
+                            setPtzDirectionIv(RealPlayStatus.PTZ_LEFT);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandLeft, EZConstants.EZPTZAction.EZPTZActionSTART);
+                            break;
+                        case R.id.ptz_right_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_right_sel);
+                            setPtzDirectionIv(RealPlayStatus.PTZ_RIGHT);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandRight, EZConstants.EZPTZAction.EZPTZActionSTART);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                //手指抬起
+                case MotionEvent.ACTION_UP:
+                    switch (view.getId()) {
+                        case R.id.ptz_top_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_bg);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandUp, EZConstants.EZPTZAction.EZPTZActionSTOP);
+                            break;
+                        case R.id.ptz_bottom_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_bg);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandDown, EZConstants.EZPTZAction.EZPTZActionSTOP);
+                            break;
+                        case R.id.ptz_left_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_bg);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandLeft, EZConstants.EZPTZAction.EZPTZActionSTOP);
+                            break;
+                        case R.id.ptz_right_btn:
+                            mPtzControlLy.setBackgroundResource(R.drawable.ptz_bg);
+                            ptzOption(EZConstants.EZPTZCommand.EZPTZCommandRight, EZConstants.EZPTZAction.EZPTZActionSTOP);
+                            break;
+                        default:
+                            break;
+                    }
+                    mRealPlayPtzDirectionIv.setVisibility(View.GONE);
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        }
+    };
+    //控制云台
+    private void ptzOption(final EZConstants.EZPTZCommand command, final EZConstants.EZPTZAction action) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    BaseApplication.getOpenSDK().controlPTZ(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo(), command,
+                            action, EZConstants.PTZ_SPEED_DEFAULT);
+                } catch (BaseException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    //在主屏幕上显示云台转动方向
+    private void setPtzDirectionIv(int command) {
+        if (command != -1) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT);
+            switch (command) {
+                case RealPlayStatus.PTZ_LEFT:
+                    mRealPlayPtzDirectionIv.setBackgroundResource(R.drawable.left_twinkle);
+                    params.addRule(RelativeLayout.CENTER_VERTICAL);
+                    params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+                    mRealPlayPtzDirectionIv.setLayoutParams(params);
+                    break;
+                case RealPlayStatus.PTZ_RIGHT:
+                    mRealPlayPtzDirectionIv.setBackgroundResource(R.drawable.right_twinkle);
+                    params.addRule(RelativeLayout.CENTER_VERTICAL);
+                    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+                    mRealPlayPtzDirectionIv.setLayoutParams(params);
+                    break;
+                case RealPlayStatus.PTZ_UP:
+                    mRealPlayPtzDirectionIv.setBackgroundResource(R.drawable.up_twinkle);
+                    params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+                    mRealPlayPtzDirectionIv.setLayoutParams(params);
+                    break;
+                case RealPlayStatus.PTZ_DOWN:
+                    mRealPlayPtzDirectionIv.setBackgroundResource(R.drawable.down_twinkle);
+                    params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+                    params.addRule(RelativeLayout.ALIGN_BOTTOM, R.id.realplay_sv);
+                    mRealPlayPtzDirectionIv.setLayoutParams(params);
+                    break;
+                default:
+                    break;
+            }
+            mRealPlayPtzDirectionIv.setVisibility(View.VISIBLE);
+        }
+    }
+    //切换云台控制面板
+    private void openPtzPopupWindow() {
+        //关闭云台控制面板
+        closePtzPopupWindow();
+        //将状态置为正在控制云台
+        mIsOnPtz = true;
+        ptzCloseBtn.setOnClickListener(mOnPopWndClickListener);
+        ImageButton ptzTopBtn = (ImageButton) findViewById(R.id.ptz_top_btn);
+        ptzTopBtn.setOnTouchListener(mOnTouchListener);
+        ImageButton ptzBottomBtn = (ImageButton) findViewById(R.id.ptz_bottom_btn);
+        ptzBottomBtn.setOnTouchListener(mOnTouchListener);
+        ImageButton ptzLeftBtn = (ImageButton) findViewById(R.id.ptz_left_btn);
+        ptzLeftBtn.setOnTouchListener(mOnTouchListener);
+        ImageButton ptzRightBtn = (ImageButton) findViewById(R.id.ptz_right_btn);
+        ptzRightBtn.setOnTouchListener(mOnTouchListener);
+        ptzCloseBtn.setVisibility(View.VISIBLE);
+        mPtzControlLy.setVisibility(View.VISIBLE);
+        realplay_operate_ly.setVisibility(View.GONE);
+        //将清晰度按钮;左下角播放按钮；声音按钮置为无效
+        mRealPlayQualityBtn.setEnabled(false);
+        mRealPlayBtn.setEnabled(false);
+        mRealPlaySoundBtn.setEnabled(false);
+    }
+    //关闭云台控制窗口
+    private void closePtzPopupWindow() {
+        mIsOnPtz = false;
+        if (mPtzControlLy!= null && !isFinishing()) {
+            ptzCloseBtn.setVisibility(View.GONE);
+            mPtzControlLy.setVisibility(View.GONE);
+            realplay_operate_ly.setVisibility(View.VISIBLE);
+            //将清晰度按钮;左下角播放按钮；声音按钮置为有效
+            mRealPlayQualityBtn.setEnabled(true);
+            mRealPlayBtn.setEnabled(true);
+            mRealPlaySoundBtn.setEnabled(true);
+        }
+    }
+    //对讲按钮被点击
+    private void selectTalkbackItems(){
+        if (mEZPlayertalk == null) {
+            mEZPlayertalk = BaseApplication.getOpenSDK().createPlayer(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo());
+            mEZPlayertalk.setHandler(mHandler);
+            mEZPlayertalk.setPlayVerifyCode("TYAJRR");
+        }
+//        获取支持对讲模式类型
+//        返回:
+//        对讲模式类型 EZConstants.EZTalkbackCapability.EZTalkbackNoSupport 不支持对讲 EZConstants.EZTalkbackCapability.EZTalkbackFullDuplex 支持全双工对讲 EZConstants.EZTalkbackCapability.EZTalkbackHalfDuplex 支持半双工对讲
+        if (mDeviceInfo.isSupportTalk() == EZConstants.EZTalkbackCapability.EZTalkbackFullDuplex) {
+            toast("支持全双工对讲");
+            if (isTalking) {
+                //关闭对讲
+                toast("关闭对讲");
+                mEZPlayertalk.openSound();
+                mEZPlayertalk.stopVoiceTalk();
+                isTalking = false;
+            } else {
+                //与当前设备对讲
+                mEZPlayertalk.closeSound();
+                mEZPlayertalk.setVoiceTalkStatus(true);
+                toast("开始与当前设备对讲");
+                mEZPlayertalk.startVoiceTalk();
+                isTalking = true;
+            }
+        } else if (mDeviceInfo.isSupportTalk() == EZConstants.EZTalkbackCapability.EZTalkbackHalfDuplex){
+            toast("支持半双工对讲");
+        }
+    }
+    //清晰度按钮被按下之后打开清晰度选择小窗口
+    private void openQualityPopupWindow(View anchor) {
+        if (mEZPlayer == null) {
+            return;
+        }
+        //关闭清晰度选择小窗口
+        closeQualityPopupWindow();
+        LayoutInflater layoutInflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        ViewGroup layoutView = (ViewGroup) layoutInflater.inflate(R.layout.realplay_quality_items, null, true);
+
+        Button qualitySuperHdBtn = (Button) layoutView.findViewById(R.id.quality_super_hd_btn);
+        qualitySuperHdBtn.setOnClickListener(mOnPopWndClickListener);
+        Button qualityHdBtn = (Button) layoutView.findViewById(R.id.quality_hd_btn);
+        qualityHdBtn.setOnClickListener(mOnPopWndClickListener);
+        Button qualityBalancedBtn = (Button) layoutView.findViewById(R.id.quality_balanced_btn);
+        qualityBalancedBtn.setOnClickListener(mOnPopWndClickListener);
+        Button qualityFlunetBtn = (Button) layoutView.findViewById(R.id.quality_flunet_btn);
+        qualityFlunetBtn.setOnClickListener(mOnPopWndClickListener);
+
+        qualityFlunetBtn.setVisibility(View.GONE);
+        qualityBalancedBtn.setVisibility(View.GONE);
+        qualityHdBtn.setVisibility(View.GONE);
+        qualitySuperHdBtn.setVisibility(View.GONE);
+        // 清晰度 0-流畅，1-均衡，2-高清，3-超清
+        for (EZVideoQualityInfo qualityInfo: mCameraInfo.getVideoQualityInfos()){
+            if (mCameraInfo.getVideoLevel().getVideoLevel() == qualityInfo.getVideoLevel()){
+                // 当前清晰度不添加到可切换清晰度列表中
+                continue;
+            }
+            switch (qualityInfo.getVideoLevel()){
+                case 0:
+                    qualityFlunetBtn.setVisibility(View.VISIBLE);
+                    break;
+                case 1:
+                    qualityBalancedBtn.setVisibility(View.VISIBLE);
+                    break;
+                case 2:
+                    qualityHdBtn.setVisibility(View.VISIBLE);
+                    break;
+                case 3:
+                    qualitySuperHdBtn.setVisibility(View.VISIBLE);
+                    break;
+                default:break;
+            }
+        }
+
+        mQualityPopupWindow = new PopupWindow(layoutView, RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT, true);
+        mQualityPopupWindow.setBackgroundDrawable(new BitmapDrawable());
+        mQualityPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                LogUtil.i(TAG, "KEYCODE_BACK DOWN");
+                mQualityPopupWindow = null;
+                closeQualityPopupWindow();
+            }
+        });
+        try {
+            int widthMode = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            int heightMode = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+            mQualityPopupWindow.getContentView().measure(widthMode, heightMode);
+            int yOffset = -(anchor.getHeight() + mQualityPopupWindow.getContentView().getMeasuredHeight());
+            mQualityPopupWindow.showAsDropDown(anchor, 0, yOffset);
+        } catch (Exception e) {
+            e.printStackTrace();
+            closeQualityPopupWindow();
+        }
+    }
+    //关闭清晰度选择小窗口
+    private void closeQualityPopupWindow() {
+        if (mQualityPopupWindow != null && !isFinishing()) {
+            try {
+                mQualityPopupWindow.dismiss();
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+            mQualityPopupWindow = null;
+        }
+    }
+    //声音按钮被按下
+    private void onSoundBtnClick() {
+        if (isSoundOpen) {
+            isSoundOpen = false;
+            mRealPlaySoundBtn.setBackgroundResource(R.drawable.ezopen_vertical_preview_sound_off_selector);
+        } else {
+            isSoundOpen = true;
+            mRealPlaySoundBtn.setBackgroundResource(R.drawable.ezopen_vertical_preview_sound_selector);
+        }
+        setRealPlaySound();
     }
 
     //停止播放
@@ -206,7 +573,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mEZPlayer.stopRealPlay();
         }
     }
-
     //设置直播停止的UI
     private void setRealPlayStopUI() {
         //停止对讲
@@ -229,7 +595,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mRealPlayTalkBtn.setEnabled(false);
         }
     }
-
     public void setStopLoading() {
         mRealPlayLoadingRl.setVisibility(View.VISIBLE);
         //设备不在线的文本提示框
@@ -241,7 +606,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         //镜头隐蔽中提示组（一张图与一个text文本）
         mRealPlayPlayPrivacyLy.setVisibility(View.GONE);
     }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -285,7 +649,7 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mRealPlayQualityBtn.setVisibility(View.INVISIBLE);
         }
     }
-    //设置直播清晰度
+    //设置直播清晰度按钮文本
     private void setVideoLevel() {
         if (mCameraInfo == null || mEZPlayer == null || mDeviceInfo == null) {
             return;
@@ -310,7 +674,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mRealPlayQualityBtn.setText("未知");
         }
     }
-
     //开始播放
     private void startRealPlay() {
         // 增加手机客户端操作信息记录
@@ -332,12 +695,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mEZPlayer = BaseApplication.getOpenSDK().createPlayer(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo());
             if (mEZPlayer == null||mDeviceInfo == null)
                 return;
-            /**
-             * 设备加密的需要传入密码
-             * 传入视频加密密码，用于加密视频的解码，该接口可以在收到ERROR_INNER_VERIFYCODE_NEED或ERROR_INNER_VERIFYCODE_ERROR错误回调时调用
-             * @param verifyCode 视频加密密码，默认为设备的6位验证码
-             */
-//            mEZPlayer.setPlayVerifyCode(DataManager.getInstance().getDeviceSerialVerifyCode(mCameraInfo.getDeviceSerial()));
             //设置Handler, 该handler将被用于从播放器向handler传递消息
             mEZPlayer.setHandler(mHandler);
             //设置播放器的显示Surface
@@ -345,7 +702,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mEZPlayer.startRealPlay();
         }
     }
-
     //设置正在加载的页面UI
     private void setRealPlayLoadingUI() {
         setStartloading();
@@ -362,7 +718,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mRealPlayTalkBtn.setEnabled(false);
         }
     }
-
     //设置直播失败的UI
     private void setRealPlayFailUI(String errorStr) {
         setLoadingFail(errorStr);
@@ -380,7 +735,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mRealPlayTalkBtn.setEnabled(false);
         }
     }
-
     //设置出错时加载页面的内容
     public void setLoadingFail(String errorStr) {
         mRealPlayLoadingRl.setVisibility(View.VISIBLE);
@@ -434,11 +788,58 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
                 //播放失败则跳出提示停止播放，传入的msg是Message类型的，后面要转成int型，所以这里以obj型传过去
                 handlePlayFail(msg.obj);
                 break;
+            case EZConstants.EZRealPlayConstants.MSG_SET_VEDIOMODE_SUCCESS:
+                //设置直播清晰度成功
+                handleSetVedioModeSuccess();
+                break;
+            case EZConstants.EZRealPlayConstants.MSG_SET_VEDIOMODE_FAIL:
+                //设置直播清晰度失败
+                handleSetVedioModeFail(msg.arg1);
+                break;
+            case EZConstants.EZRealPlayConstants.MSG_REALPLAY_VOICETALK_SUCCESS:
+                //对讲启动成功
+                toast("对讲启动成功");
+                isTalking = true;
+                break;
+            case EZConstants.EZRealPlayConstants.MSG_REALPLAY_VOICETALK_FAIL:
+                //对讲失败
+                ErrorInfo errorInfo = (ErrorInfo) msg.obj;
+                toast("对讲失败" + errorInfo.errorCode);
+                isTalking = false;
+                break;
             default:
                 // do nothing
                 break;
         }
         return false;
+    }
+    //处理设置直播清晰度失败的handler消息
+    private void handleSetVedioModeFail(int errorCode) {
+        closeQualityPopupWindow();
+        setVideoLevel();
+        try {
+            mWaitDialog.dismiss();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        toast("设置清晰度失败！"+ errorCode);
+    }
+    //处理设置直播清晰度成功的handler消息
+    private void handleSetVedioModeSuccess() {
+        //关闭清晰度选择小窗口
+        closeQualityPopupWindow();
+        //设置直播清晰度按钮文本
+        setVideoLevel();
+        try {
+            mWaitDialog.dismiss();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // 停止对讲
+//        closeTalkPopupWindow(true, false);
+        stopRealPlay();
+        SystemClock.sleep(500);
+        startRealPlay();
     }
     //处理播放失败的handle消息
     private void handlePlayFail(Object obj) {
