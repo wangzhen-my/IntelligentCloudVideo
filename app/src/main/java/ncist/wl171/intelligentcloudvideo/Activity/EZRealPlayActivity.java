@@ -3,7 +3,6 @@ package ncist.wl171.intelligentcloudvideo.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,9 +15,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -39,7 +36,6 @@ import com.videogo.openapi.bean.EZDeviceInfo;
 import com.videogo.openapi.bean.EZVideoQualityInfo;
 import com.videogo.realplay.RealPlayStatus;
 import com.videogo.util.ConnectionDetector;
-import com.videogo.util.LocalInfo;
 import com.videogo.util.LogUtil;
 import com.videogo.widget.CheckTextButton;
 import com.videogo.widget.TitleBar;
@@ -118,6 +114,7 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
     }
 
     private void initView() {
+        setStatusBarColor(this,R.color.c4);
         initTitleBar();
         initLoadingUI();
         mRealPlayBtn = (ImageButton) findViewById(R.id.realplay_play_btn);
@@ -448,29 +445,23 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         if (mEZPlayertalk == null) {
             mEZPlayertalk = BaseApplication.getOpenSDK().createPlayer(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo());
             mEZPlayertalk.setHandler(mHandler);
-            mEZPlayertalk.setPlayVerifyCode("TYAJRR");
         }
 //        获取支持对讲模式类型
 //        返回:
 //        对讲模式类型 EZConstants.EZTalkbackCapability.EZTalkbackNoSupport 不支持对讲 EZConstants.EZTalkbackCapability.EZTalkbackFullDuplex 支持全双工对讲 EZConstants.EZTalkbackCapability.EZTalkbackHalfDuplex 支持半双工对讲
         if (mDeviceInfo.isSupportTalk() == EZConstants.EZTalkbackCapability.EZTalkbackFullDuplex) {
-            toast("支持全双工对讲");
             if (isTalking) {
                 //关闭对讲
                 toast("关闭对讲");
-                mEZPlayertalk.openSound();
                 mEZPlayertalk.stopVoiceTalk();
                 isTalking = false;
             } else {
                 //与当前设备对讲
-                mEZPlayertalk.closeSound();
+                toast("开始对讲");
                 mEZPlayertalk.setVoiceTalkStatus(true);
-                toast("开始与当前设备对讲");
                 mEZPlayertalk.startVoiceTalk();
                 isTalking = true;
             }
-        } else if (mDeviceInfo.isSupportTalk() == EZConstants.EZTalkbackCapability.EZTalkbackHalfDuplex){
-            toast("支持半双工对讲");
         }
     }
     //清晰度按钮被按下之后打开清晰度选择小窗口
@@ -576,7 +567,10 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
     //设置直播停止的UI
     private void setRealPlayStopUI() {
         //停止对讲
-//        Stoptalking();
+        if(mEZPlayertalk != null && isTalking){
+            mEZPlayertalk.stopVoiceTalk();
+            isTalking = false;
+        }
         //设置停止直播时页面的加载提示视图（有用）
         setStopLoading();
         //改变左下角播放按钮的状态
@@ -765,9 +759,13 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             //释放资源
             mEZPlayer.release();
         }
+        if (mEZPlayertalk != null){
+            mEZPlayertalk.release();
+        }
         mHandler.removeMessages(EZConstants.EZRealPlayConstants.MSG_REALPLAY_PLAY_FAIL);
         mHandler.removeMessages(EZConstants.EZRealPlayConstants.MSG_REALPLAY_PLAY_SUCCESS);
         mHandler.removeMessages(MSG_VIDEO_SIZE_CHANGED);
+        mHandler.removeMessages(EZConstants.EZRealPlayConstants.MSG_REALPLAY_VOICETALK_SUCCESS);
         mHandler = null;
     }
     //设置handle消息处理
@@ -990,5 +988,20 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             mEZPlayer.setSurfaceHold(null);
         }
         mRealPlaySh = null;
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (mCameraInfo == null) {
+            return;
+        }
+        closePtzPopupWindow();
+        if (mStatus != RealPlayStatus.STATUS_STOP) {
+            stopRealPlay();
+            mStatus = RealPlayStatus.STATUS_PAUSE;
+            setRealPlayStopUI();
+        } else {
+            setStopLoading();
+        }
     }
 }

@@ -153,18 +153,16 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
 //                selectCameraDialog.setCameraItemClick(EZCameraListActivity.this);
 //                selectCameraDialog.show(getFragmentManager(), "RemotePlayBackClick");
             }
-
             //点击设置图标
             @Override
             public void onSetDeviceClick(BaseAdapter adapter, View view, int position) {
-//                mClickType = TAG_CLICK_SET_DEVICE;
-//                EZDeviceInfo deviceInfo = mAdapter.getItem(position);
-//                Intent intent = new Intent(EZCameraListActivity.this, EZDeviceSettingActivity.class);
-//                Bundle bundle = new Bundle();
-//                bundle.putParcelable(IntentConsts.EXTRA_DEVICE_INFO,deviceInfo);
-//                intent.putExtra("Bundle",bundle);
-//                startActivity(intent);
-//                bIsFromSetting = true;
+                EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+                Intent intent = new Intent(MainActivity.this, EZDeviceSettingActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putParcelable(IntentConsts.EXTRA_DEVICE_INFO,deviceInfo);
+                intent.putExtra("Bundle",bundle);
+                startActivity(intent);
+                bIsFromSetting = true;
             }
 
             //点击消息通知图标

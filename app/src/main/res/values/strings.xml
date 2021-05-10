@@ -14,4 +14,5 @@
     <string name="get_camera_list_fail2">获取设备列表失败！请重新登录！</string>
     <string name="quality_balanced">均衡</string>
     <string name="realplay_play_fail_becauseof_network">视频播放失败，请检查您的网络</string>
+    <string name="ez_setting">设备设置</string>
 </resources>

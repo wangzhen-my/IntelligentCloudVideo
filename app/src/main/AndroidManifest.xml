@@ -24,8 +24,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.IntelligentCloudVideo">
-        <activity android:name=".Activity.EZRealPlayActivity"
+        <activity android:name=".Activity.ModifyDeviceNameActivity"
             android:screenOrientation="portrait"></activity>
+        <activity
+            android:name=".Activity.EZDeviceSettingActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".Activity.EZRealPlayActivity"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".Activity.MainActivity"
             android:screenOrientation="portrait" />
