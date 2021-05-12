@@ -37,6 +37,8 @@ import static ncist.wl171.intelligentcloudvideo.Base.BaseApplication.getOpenSDK;
 
 public class MainActivity extends RootActivity implements View.OnClickListener {
 
+    //添加设备按钮
+    private Button mAddBtn;
     public final static int RESULT_CODE = 101;
     public final static int REQUEST_CODE = 100;
 
@@ -60,6 +62,15 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
     }
 
     private void initView() {
+        mAddBtn = (Button) findViewById(R.id.btn_add);
+        mAddBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SeriesNumSearchActivity.class);
+                startActivity(intent);
+
+            }
+        });
         mNoCameraTipLy = (LinearLayout) findViewById(R.id.no_camera_tip_ly);
         mListView = (ListView) findViewById(R.id.camera_listview);
         mAdapter = new EZCameraListAdapter(this);
