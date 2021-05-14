@@ -15,4 +15,5 @@
     <string name="quality_balanced">均衡</string>
     <string name="realplay_play_fail_becauseof_network">视频播放失败，请检查您的网络</string>
     <string name="ez_setting">设备设置</string>
+    <string name="tip_of_added_by_yourself_and_online">设备已被当前账户添加，如果需要给设备重新配网，请重置设备，并在下次配网前至少等待3分钟。</string>
 </resources>
