@@ -60,35 +60,15 @@
 	            android:textColor="#333333"
 	            android:textSize="15sp" />
         </LinearLayout>
-		
+
         <LinearLayout
             android:layout_width="200dp"
             android:layout_height="40dp"
+            android:layout_marginTop="4dp"
             android:gravity="left|center_vertical|start"
             android:orientation="horizontal"
-            android:layout_marginTop="4dp"
-            android:paddingRight="15dp" >
+            android:paddingRight="15dp">
 
-            <RelativeLayout
-                android:id="@+id/tab_remoteplayback_rl"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="5dp"
-                android:layout_weight="3"
-                android:background="@null"
-                android:gravity="center"
-                android:orientation="vertical" >
-
-                <ImageButton
-                    android:id="@+id/tab_remoteplayback_btn"
-                    android:layout_width="fill_parent"
-                    android:layout_height="fill_parent"
-                    android:layout_centerHorizontal="true"
-                    android:background="@null"
-                    android:gravity="center"
-                    android:src="@drawable/open_cameralist_remotepb_selector" />
-            </RelativeLayout>
             <RelativeLayout
                 android:id="@+id/tab_alarmlist_rl"
                 android:layout_width="fill_parent"
@@ -98,7 +78,7 @@
                 android:layout_weight="3"
                 android:background="@null"
                 android:gravity="center"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <ImageButton
                     android:id="@+id/tab_alarmlist_btn"
@@ -108,7 +88,8 @@
                     android:background="@null"
                     android:gravity="center"
                     android:src="@drawable/open_cameralist_alarmlist_selector" />
-            </RelativeLayout>            
+            </RelativeLayout>
+
             <RelativeLayout
                 android:id="@+id/tab_setdevice_rl"
                 android:layout_width="fill_parent"
@@ -118,7 +99,7 @@
                 android:layout_weight="3"
                 android:background="@null"
                 android:gravity="center"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <ImageButton
                     android:id="@+id/tab_setdevice_btn"
@@ -127,7 +108,7 @@
                     android:layout_centerHorizontal="true"
                     android:background="@null"
                     android:gravity="center"
-                    android:src="@drawable/open_cameralist_setup_selector"/>
+                    android:src="@drawable/open_cameralist_setup_selector" />
             </RelativeLayout>
         </LinearLayout>
 

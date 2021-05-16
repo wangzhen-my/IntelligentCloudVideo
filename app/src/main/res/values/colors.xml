@@ -19,6 +19,8 @@
     <color name="common_text">#333333</color>
     <color name="auto_tip_text">#888888</color>
     <color name="scan_yellow">#e56b19</color>
+    <color name="c2">#333</color>
+    <color name="c8">#e1e1e1</color>
     <!-- 橘色字体 -->
     <color name="orange_text">#df2d10</color>
     <color name="black_text">#333333</color>

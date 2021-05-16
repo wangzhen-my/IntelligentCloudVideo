@@ -11,7 +11,7 @@
     <!-- 标题栏 -->
     <RelativeLayout android:id="@+id/title"
         android:layout_width="match_parent"
-        android:layout_height="44dp">
+        android:layout_height="45dp">
 
         <Button
             android:id="@+id/btn_user"
@@ -35,12 +35,12 @@
                 android:layout_gravity="center_vertical"
                 android:text="@string/my_devices"
                 android:textColor="@color/orange_text"
-                android:textSize="20sp"/>
+                android:textSize="22sp"/>
 
             <Button
                 android:id="@+id/btn_refresh"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="@drawable/refresh"
                 android:onClick="onClick"
                 android:layout_marginBottom="7dp"

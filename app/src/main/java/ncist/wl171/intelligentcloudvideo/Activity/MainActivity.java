@@ -22,7 +22,6 @@ import com.videogo.exception.ErrorCode;
 import com.videogo.openapi.bean.EZCameraInfo;
 import com.videogo.openapi.bean.EZDeviceInfo;
 import com.videogo.util.ConnectionDetector;
-import com.videogo.util.DateTimeUtil;
 import com.videogo.util.LogUtil;
 import com.videogo.util.Utils;
 
@@ -131,39 +130,6 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
                     return;
                 }
             }
-
-            //点击回放图标
-            @Override
-            public void onRemotePlayBackClick(BaseAdapter adapter, View view, int position) {
-//                mClickType = TAG_CLICK_REMOTE_PLAY_BACK;
-//                EZDeviceInfo deviceInfo = mAdapter.getItem(position);
-//                if (isHubDevice(deviceInfo.getDeviceType())){
-//                    jumpToDeviceInfoInputPage();
-//                    return;
-//                }
-//                if (deviceInfo.getCameraNum() <= 0 || deviceInfo.getCameraInfoList() == null || deviceInfo.getCameraInfoList().size() <= 0) {
-//                    LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
-//                    return;
-//                }
-//                /*单通道设备*/
-//                if (deviceInfo.getCameraNum() == 1 && deviceInfo.getCameraInfoList() != null && deviceInfo.getCameraInfoList().size() == 1) {
-//                    LogUtil.d(TAG, "cameralist have one camera");
-//                    EZCameraInfo cameraInfo = EZUtils.getCameraInfoFromDevice(deviceInfo, 0);
-//                    if (cameraInfo == null) {
-//                        return;
-//                    }
-//                    Intent intent = new Intent(EZCameraListActivity.this, EZPlayBackListActivity.class);
-//                    intent.putExtra(RemoteListContant.QUERY_DATE_INTENT_KEY, DateTimeUtil.getNow());
-//                    intent.putExtra(IntentConsts.EXTRA_CAMERA_INFO, cameraInfo);
-//                    startActivity(intent);
-//                    return;
-//                }
-//                /*多通道设备*/
-//                SelectCameraDialog selectCameraDialog = new SelectCameraDialog();
-//                selectCameraDialog.setEZDeviceInfo(deviceInfo);
-//                selectCameraDialog.setCameraItemClick(EZCameraListActivity.this);
-//                selectCameraDialog.show(getFragmentManager(), "RemotePlayBackClick");
-            }
             //点击设置图标
             @Override
             public void onSetDeviceClick(BaseAdapter adapter, View view, int position) {
@@ -175,16 +141,15 @@ public class MainActivity extends RootActivity implements View.OnClickListener {
                 startActivity(intent);
                 bIsFromSetting = true;
             }
-
             //点击消息通知图标
             @Override
             public void onAlarmListClick(BaseAdapter adapter, View view, int position) {
-//                mClickType = TAG_CLICK_ALARM_LIST;
-//                final EZDeviceInfo deviceInfo = mAdapter.getItem(position);
-//                LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
-//                Intent intent = new Intent(EZCameraListActivity.this, EZMessageActivity2.class);
-//                intent.putExtra(IntentConsts.EXTRA_DEVICE_ID, deviceInfo.getDeviceSerial());
-//                startActivity(intent);
+                final EZDeviceInfo deviceInfo = mAdapter.getItem(position);
+                LogUtil.d(TAG, "cameralist is null or cameralist size is 0");
+                Intent intent = new Intent(MainActivity.this, EZMessageActivity2.class);
+                //获取设备序列号并传递给下一个界面
+                intent.putExtra(IntentConsts.EXTRA_DEVICE_ID, deviceInfo.getDeviceSerial());
+                startActivity(intent);
             }
         });
         mListView.setAdapter(mAdapter);

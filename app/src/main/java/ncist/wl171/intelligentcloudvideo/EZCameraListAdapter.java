@@ -67,7 +67,6 @@ public class EZCameraListAdapter extends BaseAdapter {
             viewHolder.offlineBtn = (ImageView) convertView.findViewById(R.id.item_offline);
             viewHolder.cameraNameTv = (TextView) convertView.findViewById(R.id.camera_name_tv);
             viewHolder.alarmListBtn = (ImageButton) convertView.findViewById(R.id.tab_alarmlist_btn);
-            viewHolder.remoteplaybackBtn = (ImageButton) convertView.findViewById(R.id.tab_remoteplayback_btn);
             viewHolder.setDeviceBtn = (ImageButton) convertView.findViewById(R.id.tab_setdevice_btn);
             viewHolder.itemIconArea = convertView.findViewById(R.id.item_icon_area);
 
@@ -76,9 +75,6 @@ public class EZCameraListAdapter extends BaseAdapter {
 
             // 设置报警列表的监听响应函数
             viewHolder.alarmListBtn.setOnClickListener(mOnClickListener);
-
-            // 设置历史回放的监听响应函数
-            viewHolder.remoteplaybackBtn.setOnClickListener(mOnClickListener);
 
             // 设置设备设置的监听响应函数
             viewHolder.setDeviceBtn.setOnClickListener(mOnClickListener);
@@ -92,7 +88,6 @@ public class EZCameraListAdapter extends BaseAdapter {
 
         // 设置position
         viewHolder.playBtn.setTag(position);
-        viewHolder.remoteplaybackBtn.setTag(position);
         viewHolder.alarmListBtn.setTag(position);
         viewHolder.setDeviceBtn.setTag(position);
 
@@ -140,8 +135,6 @@ public class EZCameraListAdapter extends BaseAdapter {
 
         public void onAlarmListClick(BaseAdapter adapter, View view, int position);
 
-        public void onRemotePlayBackClick(BaseAdapter adapter, View view, int position);
-
         public void onSetDeviceClick(BaseAdapter adapter, View view, int position);
     }
 
@@ -154,10 +147,6 @@ public class EZCameraListAdapter extends BaseAdapter {
                 switch (v.getId()) {
                     case R.id.item_play_btn:
                         mListener.onPlayClick(EZCameraListAdapter.this, v, position);
-                        break;
-
-                    case R.id.tab_remoteplayback_btn:
-                        mListener.onRemotePlayBackClick(EZCameraListAdapter.this, v, position);
                         break;
 
                     case R.id.tab_alarmlist_btn:
@@ -181,8 +170,6 @@ public class EZCameraListAdapter extends BaseAdapter {
         public TextView cameraNameTv;
 
         public ImageButton alarmListBtn;
-
-        public ImageButton remoteplaybackBtn;
 
         public ImageButton setDeviceBtn;
 
