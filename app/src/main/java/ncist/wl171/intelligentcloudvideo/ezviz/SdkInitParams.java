@@ -1,7 +1,7 @@
 package ncist.wl171.intelligentcloudvideo.ezviz;
 
 import com.google.gson.Gson;
-
+/**Sdk初始化参数类*/
 public class SdkInitParams {
 
     public String appKey;

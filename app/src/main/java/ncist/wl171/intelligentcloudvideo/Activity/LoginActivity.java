@@ -104,7 +104,7 @@ public class LoginActivity extends RootActivity {
     //初始化
     private void initData() {
         settFullscreen(this);
-        //则初始化SDK配置
+        //初始化SDK配置
         mInitParams = SdkInitParams.createBy();
         mInitParams.accessToken = null;
         //传入SDK参数类的变量，对萤石的SDK进行初始化参数设置

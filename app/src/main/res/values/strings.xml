@@ -2,7 +2,7 @@
     <string name="app_name">智能云视频</string>
     <string name="tip_of_bad_net">无法连接到服务器，请检查手机网络！</string>
     <string name="login_expire">无效AppKey或AccessToken，请重新登录</string>
-    <string name="my_devices">我的</string>
+    <string name="my_devices">我的设备</string>
     <string name="share_devices">分享</string>
     <string name="exit">确定退出登录</string>
     <string name="exit_tip">是否要切换到其他账号？ 注意：当前app将会被强制关闭，请重新手动打开它！</string>

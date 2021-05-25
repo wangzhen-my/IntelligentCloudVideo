@@ -14,7 +14,7 @@ public class SdkInitTool {
 
         TestParams.setUse(true);
         // sdk日志开关，正式发布需要去掉
-        EZOpenSDK.showSDKLog(true);
+        EZOpenSDK.showSDKLog(false);
         // 设置是否支持P2P取流,详见api
         EZOpenSDK.enableP2P(true);
         // APP_KEY请替换成自己申请的
