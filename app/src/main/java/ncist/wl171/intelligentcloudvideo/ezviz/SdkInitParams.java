@@ -9,7 +9,7 @@ public class SdkInitParams {
     public int serverAreaId;
     public String openApiServer;
     public String openAuthApiServer;
-
+    //空的构造函数
     public SdkInitParams(){}
 
     @Override

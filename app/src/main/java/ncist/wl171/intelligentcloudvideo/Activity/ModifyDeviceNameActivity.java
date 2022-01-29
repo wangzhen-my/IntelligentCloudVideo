@@ -87,7 +87,6 @@ public class ModifyDeviceNameActivity extends RootActivity {
                     return;
                 }
                 mWaitDialog.show();
-
                 new Thread() {
                     @Override
                     public void run() {

@@ -11,7 +11,6 @@ import ncist.wl171.intelligentcloudvideo.Base.BaseApplication;
 
 public class SdkInitTool {
     public static void initSdk(@NonNull Application application, @NonNull SdkInitParams sdkInitParams){
-
         TestParams.setUse(true);
         // sdk日志开关，正式发布需要去掉
         EZOpenSDK.showSDKLog(false);

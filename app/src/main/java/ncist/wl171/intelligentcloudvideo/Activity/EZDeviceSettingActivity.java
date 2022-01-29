@@ -241,6 +241,7 @@ public class EZDeviceSettingActivity extends RootActivity {
             super.onPreExecute();
             mWaitDialog = new Dialog(EZDeviceSettingActivity.this, android.R.style.Theme_Translucent_NoTitleBar);
             mWaitDialog.setContentView(R.layout.wait_dialog);
+            //设置返回键和点击其他区域不会使对话框消失
             mWaitDialog.setCancelable(false);
             mWaitDialog.show();
         }

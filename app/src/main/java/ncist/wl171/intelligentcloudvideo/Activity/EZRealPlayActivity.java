@@ -125,7 +125,9 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         mRealPlayTalkBtn = (ImageButton) findViewById(R.id.realplay_talk_btn);
         mRealPlaySoundBtn = (ImageButton) findViewById(R.id.realplay_sound_btn);
         mRealPlaySv = (SurfaceView) findViewById(R.id.realplay_sv);
+        //获取SurfaceView的控制接口
         mRealPlaySh = mRealPlaySv.getHolder();
+        //为SurfaceHolder添加回调
         mRealPlaySh.addCallback(this);
         //初始化设置清晰度加载中的提示框样式
         mWaitDialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
@@ -295,7 +297,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         @Override
         public boolean onTouch(View view, MotionEvent motionevent) {
             int action = motionevent.getAction();
-            final int speed = EZConstants.PTZ_SPEED_DEFAULT;
             switch (action) {
                 //屏幕手指按下
                 case MotionEvent.ACTION_DOWN:
@@ -360,6 +361,12 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             @Override
             public void run() {
                 try {
+                    /**参数:
+                    deviceSerial - 设备序列号
+                    cameraNo - 通道号
+                    command - ptz控制命令
+                    action - 控制启动/停止
+                    speed - 速度（0-2）*/
                     BaseApplication.getOpenSDK().controlPTZ(mCameraInfo.getDeviceSerial(), mCameraInfo.getCameraNo(), command,
                             action, EZConstants.PTZ_SPEED_DEFAULT);
                 } catch (BaseException e) {
@@ -370,7 +377,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
     }
     //在主屏幕上显示云台转动方向
     private void setPtzDirectionIv(int command) {
-        if (command != -1) {
             RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
                     RelativeLayout.LayoutParams.WRAP_CONTENT);
             switch (command) {
@@ -395,14 +401,13 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
                 case RealPlayStatus.PTZ_DOWN:
                     mRealPlayPtzDirectionIv.setBackgroundResource(R.drawable.down_twinkle);
                     params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                    params.addRule(RelativeLayout.ALIGN_BOTTOM, R.id.realplay_sv);
+                    params.addRule(RelativeLayout.ALIGN_BOTTOM);
                     mRealPlayPtzDirectionIv.setLayoutParams(params);
                     break;
                 default:
                     break;
             }
             mRealPlayPtzDirectionIv.setVisibility(View.VISIBLE);
-        }
     }
     //切换云台控制面板
     private void openPtzPopupWindow() {
@@ -670,8 +675,6 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
     }
     //开始播放
     private void startRealPlay() {
-        // 增加手机客户端操作信息记录
-        LogUtil.d(TAG, "startRealPlay");
         //如果状态为开始或者正在播放则直接返回
         if (mStatus == RealPlayStatus.STATUS_START || mStatus == RealPlayStatus.STATUS_PLAY) {
             return;
@@ -962,6 +965,7 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         mRealPlayPlayLoading.setVisibility(View.GONE);
         mRealPlayPlayIv.setVisibility(View.GONE);
     }
+    //播放器控制接口生命周期,在创建时激发，一般在这里调用画图的线程
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (mEZPlayer != null) {
@@ -973,7 +977,7 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
             startRealPlay();
         }
     }
-
+    //播放器控制接口生命周期,在surface的大小发生改变时激发
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         if (mEZPlayer != null) {
@@ -981,7 +985,7 @@ public class EZRealPlayActivity extends RootActivity implements View.OnClickList
         }
         mRealPlaySh = holder;
     }
-
+    //播放器控制接口生命周期,销毁时激发，一般在这里将画图的线程停止、释放
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         if (mEZPlayer != null) {

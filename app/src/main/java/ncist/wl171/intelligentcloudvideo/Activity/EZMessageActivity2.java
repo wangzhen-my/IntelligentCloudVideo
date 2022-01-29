@@ -120,7 +120,7 @@ public class EZMessageActivity2 extends RootActivity {
             } else {
                 mErrorCode = ERROR_WEB_NO_DATA;
             }
-            //如果有数据则设置没有数据提示信息不可见
+            //如果有数据则设置"没有数据"提示信息不可见
             if (mMessageList.size() > 0) {
                 mNoMessageLayout.setVisibility(View.GONE);
             }

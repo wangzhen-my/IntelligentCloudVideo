@@ -115,7 +115,6 @@ public class SeriesNumSearchActivity extends RootActivity implements View.OnClic
                 break;
             case R.id.addBtn:
                 if(!TextUtils.isEmpty(mVerifyCode)){
-                    // Local network detection
                     if (!ConnectionDetector.isNetworkAvailable(SeriesNumSearchActivity.this)) {
                         toast("添加失败，请检查您的网络");
                         return;
@@ -128,11 +127,8 @@ public class SeriesNumSearchActivity extends RootActivity implements View.OnClic
                                  参数:
                                  deviceSerial - 设备序列号
                                  verifyCode - 设备验证码，验证码位于设备机身上，6位大写字母
-                                 返回:
-                                 true 表示成功， false 表示失败*/
+                                 返回: true 表示成功， false 表示失败*/
                                 boolean result = BaseApplication.getOpenSDK().addDevice(mSerialNoStr, mVerifyCode);
-
-                                /***********If necessary, the developer needs to save this code***********/
                                 // 添加成功过后
                                 mWaitDlg.dismiss();
                                 Intent intent = new Intent(SeriesNumSearchActivity.this, MainActivity.class);
@@ -142,7 +138,6 @@ public class SeriesNumSearchActivity extends RootActivity implements View.OnClic
                                 LogUtil.d(TAG, errorInfo.toString());
                                 toast("添加失败：" + errorInfo.errorCode);
                             }
-
                         }
                     }.start();
                 } else {
@@ -196,14 +191,12 @@ public class SeriesNumSearchActivity extends RootActivity implements View.OnClic
                 if (mEZProbeDeviceInfo != null){
                     if (mEZProbeDeviceInfo.getBaseException() == null){
                         // 设备查询成功，开始添加设备
-                        if (mEZProbeDeviceInfo != null) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    showAddButton();
-                                }
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showAddButton();
+                            }
                             });
-                        }
                     }else{
                         switch (mEZProbeDeviceInfo.getBaseException().getErrorCode()){
                             case 120023:
